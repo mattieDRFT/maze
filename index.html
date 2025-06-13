@@ -19,7 +19,7 @@
             min-height: 100vh; /* Full viewport height */
             margin: 0; /* Remove default body margin */
             overflow: hidden; /* Prevent body scrolling, important for touch interactions */
-            touch-action: none; /* Added: Crucial for preventing default touch behaviors on iOS */
+            touch-action: none; /* Crucial for preventing default touch behaviors on iOS */
         }
 
         /* Styling for the main game container */
@@ -37,13 +37,13 @@
 
         /* Styling for the game canvas itself */
         canvas {
-            background-color: #FFFF00; /* Changed to glowing yellow for maze paths */
+            background-color: #FFFF00; /* Glowing yellow for maze paths */
             border: 4px solid #000000; /* Black border to contrast with yellow maze */
             border-radius: 0.5rem; /* Rounded corners for the canvas */
             /* Prevents common mobile browser gestures like scrolling/zooming,
                allowing touch events to be used for game control */
             touch-action: none;
-            pointer-events: auto; /* Added: Ensure canvas explicitly receives pointer events */
+            pointer-events: auto; /* Ensure canvas explicitly receives pointer events */
             display: block; /* Removes extra space below canvas */
             max-width: 100%; /* Ensures canvas scales down on small screens */
             height: auto; /* Maintains aspect ratio when scaling */
@@ -382,6 +382,10 @@
         }
 
         // --- Event Listeners for Mouse and Touch Interactions ---
+
+        // Dummy touchstart listener for iOS iframe compatibility
+        // This can sometimes "activate" touch event handling on iOS Safari/Brave
+        document.addEventListener('touchstart', () => { /* no-op */ }, { passive: false });
 
         // Mouse events (for desktop interaction)
         canvas.addEventListener('mousedown', (e) => {
