@@ -18,8 +18,8 @@
             align-items: center;
             min-height: 100vh; /* Full viewport height */
             margin: 0; /* Remove default body margin */
-            overflow: hidden; /* Prevent body scrolling, important for touch interactions */
-            touch-action: none; /* Crucial for preventing default touch behaviors on iOS */
+            overflow: hidden; /* Prevent body scrolling */
+            /* Removed touch-action: none from body - will handle globally in JS for iOS */
         }
 
         /* Styling for the main game container */
@@ -42,16 +42,12 @@
             border-radius: 0.5rem; /* Rounded corners for the canvas */
             /* Prevents common mobile browser gestures like scrolling/zooming,
                allowing touch events to be used for game control */
-            touch-action: none;
-            pointer-events: auto; /* Ensure canvas explicitly receives pointer events */
+            touch-action: none; /* Keep touch-action on canvas */
+            /* Removed pointer-events: auto from canvas - was not in original working version */
             display: block; /* Removes extra space below canvas */
             max-width: 100%; /* Ensures canvas scales down on small screens */
             height: auto; /* Maintains aspect ratio when scaling */
-        }
-
-        /* Message box and debug info styles are removed as the elements are removed */
-        /* Reset button styles are removed as the element is removed */
-    </style>
+        </style>
 </head>
 <body>
     <div class="game-container">
@@ -383,9 +379,11 @@
 
         // --- Event Listeners for Mouse and Touch Interactions ---
 
-        // Dummy touchstart listener for iOS iframe compatibility
-        // This can sometimes "activate" touch event handling on iOS Safari/Brave
+        // Dummy touchstart listener for iOS iframe compatibility (kept for activation)
         document.addEventListener('touchstart', () => { /* no-op */ }, { passive: false });
+
+        // NEW: Global touchmove listener to prevent default scrolling across the entire iframe content
+        window.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
 
         // Mouse events (for desktop interaction)
         canvas.addEventListener('mousedown', (e) => {
@@ -410,14 +408,14 @@
         // Touch events (for mobile interaction)
         // `passive: false` is crucial here to allow `e.preventDefault()` to stop default browser behaviors (like scrolling)
         canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Prevent default browser touch actions
+            e.preventDefault(); // Prevent default browser touch actions for canvas touches
             touch.isDown = true;
             const touch = e.touches[0]; // Get the first touch point
             setTargetPosition(touch.clientX, touch.clientY);
         }, { passive: false });
 
         canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault(); // Prevent default browser touch actions
+            e.preventDefault(); // Prevent default browser touch actions for canvas touches
             if (touch.isDown && gameStarted && !gameWon) {
                 const touch = e.touches[0]; // Get the first touch point
                 setTargetPosition(touch.clientX, touch.clientY);
