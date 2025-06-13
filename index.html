@@ -19,6 +19,7 @@
             min-height: 100vh; /* Full viewport height */
             margin: 0; /* Remove default body margin */
             overflow: hidden; /* Prevent body scrolling, important for touch interactions */
+            touch-action: none; /* Added: Crucial for preventing default touch behaviors on iOS */
         }
 
         /* Styling for the main game container */
@@ -42,6 +43,7 @@
             /* Prevents common mobile browser gestures like scrolling/zooming,
                allowing touch events to be used for game control */
             touch-action: none;
+            pointer-events: auto; /* Added: Ensure canvas explicitly receives pointer events */
             display: block; /* Removes extra space below canvas */
             max-width: 100%; /* Ensures canvas scales down on small screens */
             height: auto; /* Maintains aspect ratio when scaling */
@@ -101,8 +103,7 @@
         ];
 
         let cellSize;
-        // Ball physics parameters adjusted for "harder" gameplay
-        // Increased speed and decreased damping for more sensitive control
+        // Ball physics parameters remain unchanged as per previous versions
         let ball = { x: 0, y: 0, radius: 0, vx: 0, vy: 0, speed: 0.7, damping: 0.85 };
         let targetX = 0;
         let targetY = 0;
@@ -168,13 +169,13 @@
             for (let row = 0; row < maze.length; row++) {
                 for (let col = 0; col < maze[row].length; col++) {
                     if (maze[row][col] === 1) { // If cell contains a wall
-                        ctx.fillStyle = '#000000'; /* Wall color (black) to define the white maze path */
+                        ctx.fillStyle = '#000000'; /* Wall color (black) to contrast with yellow paths */
                         ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize); // Draw wall
                     }
                 }
             }
 
-            // Draw start point (yellow fill with black border)
+            // Draw start point (glowing yellow fill with black border)
             ctx.fillStyle = '#FFFF00'; // Yellow fill
             ctx.fillRect(startPoint.col * cellSize, startPoint.row * cellSize, cellSize, cellSize);
             ctx.strokeStyle = '#000000'; // Black border
@@ -186,7 +187,7 @@
             ctx.fillStyle = '#000000'; // Black circle
             ctx.fill();
 
-            // Draw end point (yellow fill with black border)
+            // Draw end point (glowing yellow fill with black border)
             ctx.fillStyle = '#FFFF00'; // Yellow fill
             ctx.fillRect(endPoint.col * cellSize, endPoint.row * cellSize, cellSize, cellSize);
             ctx.strokeStyle = '#000000'; // Black border
