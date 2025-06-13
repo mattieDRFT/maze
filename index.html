@@ -8,31 +8,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <!-- Tailwind CSS CDN for easy styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Three.js CDN for 3D background animation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        /* Base styles for the body to provide a clean white background and center the game */
+        /* Base styles for the body to provide a black background and center the game */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #000000; /* Dark background for galaxy theme */
+            background-color: #000000; /* Changed to black background */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh; /* Full viewport height */
             margin: 0; /* Remove default body margin */
             overflow: hidden; /* Prevent body scrolling, important for touch interactions */
-            position: relative; /* Needed for z-index positioning of canvases */
-        }
-
-        /* Styling for the 3D background canvas */
-        #backgroundCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0; /* Ensures it's behind the maze canvas */
-            display: block;
         }
 
         /* Styling for the main game container */
@@ -40,45 +26,48 @@
             display: flex;
             flex-direction: column;
             align-items: center; /* Center items horizontally */
-            background-color: transparent; /* Transparent background to show galaxy */
+            background-color: transparent; /* Transparent background */
             padding: 0; /* Remove padding for a cleaner look */
             border-radius: 0; /* Remove rounded corners */
             box-shadow: none; /* Remove shadows */
             max-width: 90%; /* Max width for responsiveness on larger screens */
             width: fit-content; /* Adjust width to content */
-            position: relative; /* Needed for z-index of maze canvas */
-            z-index: 1; /* Ensures it's above the background canvas */
         }
 
-        /* Styling for the game canvas itself (maze) */
+        /* Styling for the game canvas itself */
         canvas {
-            background-color: rgba(237, 242, 247, 0.85); /* Slightly transparent white for maze paths */
-            border: 4px solid #4a5568; /* Dark border around the maze */
+            background-color: #ffffff; /* Changed to white for maze paths */
+            border: 4px solid #000000; /* Changed to black border to contrast with white maze */
             border-radius: 0.5rem; /* Rounded corners for the canvas */
-            touch-action: none; /* Prevents default mobile browser gestures */
+            /* Prevents common mobile browser gestures like scrolling/zooming,
+               allowing touch events to be used for game control */
+            touch-action: none;
             display: block; /* Removes extra space below canvas */
             max-width: 100%; /* Ensures canvas scales down on small screens */
             height: auto; /* Maintains aspect ratio when scaling */
         }
+
+        /* Message box and debug info styles are removed as the elements are removed */
+        /* Reset button styles are removed as the element is removed */
     </style>
 </head>
 <body>
-    <canvas id="backgroundCanvas"></canvas> <!-- 3D background canvas -->
     <div class="game-container">
-        <canvas id="mazeCanvas"></canvas> <!-- 2D maze game canvas -->
+        <canvas id="mazeCanvas"></canvas>
+        <!-- Message box, debug info, and reset button elements are removed as per request -->
     </div>
 
     <script>
-        // --- Maze Game Logic ---
-        const mazeCanvas = document.getElementById('mazeCanvas');
-        const ctx = mazeCanvas.getContext('2d');
+        // Get references to DOM elements
+        const canvas = document.getElementById('mazeCanvas');
+        const ctx = canvas.getContext('2d');
+        // messageBox, resetButton, and debugInfo references are removed
 
         // Mouse and touch state variables
         let mouse = { x: 0, y: 0, isDown: false };
         let touch = { x: 0, y: 0, isDown: false };
 
-        // NEW SOLVABLE Maze Configuration (1 for wall, 0 for path)
-        // This maze is designed to be solvable and challenging.
+        // Maze configuration - 1 for wall, 0 for path. This map is unchanged as per your request.
         const maze = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -112,8 +101,9 @@
         ];
 
         let cellSize;
-        // Ball physics parameters adjusted for faster movement
-        let ball = { x: 0, y: 0, radius: 0, vx: 0, vy: 0, speed: 0.9, damping: 0.8 }; /* Adjusted for faster ball */
+        // Ball physics parameters adjusted for "harder" gameplay
+        // Increased speed and decreased damping for more sensitive control
+        let ball = { x: 0, y: 0, radius: 0, vx: 0, vy: 0, speed: 0.7, damping: 0.85 };
         let targetX = 0;
         let targetY = 0;
         let gameStarted = false;
@@ -129,55 +119,62 @@
          * Calculates cell size based on screen, resets ball position, and starts animation.
          */
         function initializeGame() {
+            // Stop any ongoing animation frame to prevent multiple game loops
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
             }
 
-            const maxCanvasWidth = window.innerWidth * 0.9;
-            const maxCanvasHeight = window.innerHeight * 0.8;
+            // Determine maximum canvas dimensions based on window size for responsiveness
+            const maxCanvasWidth = window.innerWidth * 0.9; // Use up to 90% of window width
+            const maxCanvasHeight = window.innerHeight * 0.8; // Use up to 80% of window height
 
             const rows = maze.length;
             const cols = maze[0].length;
 
-            // Set cellSize to a reasonable value that balances size and difficulty with the new maze layout.
-            // This ensures the maze is larger and solvable, but still provides a challenge.
-            cellSize = Math.min(Math.floor(maxCanvasWidth / cols), Math.floor(maxCanvasHeight / rows), 20); // Balanced size
+            // Calculate the ideal cell size to fit the maze within the max dimensions
+            const tempCellSizeWidth = Math.floor(maxCanvasWidth / cols);
+            const tempCellSizeHeight = Math.floor(maxCanvasHeight / rows);
+            // Reverted to a balanced cellSize to ensure maze is large enough and playable
+            cellSize = Math.min(tempCellSizeWidth, tempCellSizeHeight, 20);
 
-            mazeCanvas.width = cols * cellSize;
-            mazeCanvas.height = rows * cellSize;
+            // Set canvas dimensions based on calculated cell size
+            canvas.width = cols * cellSize;
+            canvas.height = rows * cellSize;
 
-            ball.radius = cellSize * 0.4;
+            // Initialize ball's position to the center of the start cell
+            ball.radius = cellSize * 0.4; // Ball radius is 40% of cell size
             ball.x = startPoint.col * cellSize + cellSize / 2;
             ball.y = startPoint.row * cellSize + cellSize / 2;
-            ball.vx = 0;
-            ball.vy = 0;
+            ball.vx = 0; // Reset horizontal velocity
+            ball.vy = 0; // Reset vertical velocity
 
+            // Set initial target to current ball position to prevent immediate movement
             targetX = ball.x;
             targetY = ball.y;
 
-            gameStarted = true;
-            gameWon = false;
-            drawMaze();
-            animate();
+            gameStarted = true; // Mark game as started
+            gameWon = false;    // Reset win condition
+            drawMaze();         // Draw the maze and ball in their initial states
+            animate();          // Start the main game animation loop
         }
 
         /**
          * Draws the maze walls, start point, end point, and the ball on the canvas.
          */
         function drawMaze() {
-            ctx.clearRect(0, 0, mazeCanvas.width, mazeCanvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the entire canvas
 
             // Iterate through the maze array to draw walls
             for (let row = 0; row < maze.length; row++) {
                 for (let col = 0; col < maze[row].length; col++) {
                     if (maze[row][col] === 1) { // If cell contains a wall
-                        ctx.fillStyle = '#4a5568'; /* Wall color (dark grey) to define the white maze path */
-                        ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+                        ctx.fillStyle = '#000000'; /* Wall color (black) to define the white maze path */
+                        ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize); // Draw wall
                     }
                 }
             }
 
-            // Draw start point (subtle white fill with black border)
+            // Draw start point (white fill with black border)
             ctx.fillStyle = '#ffffff'; // White fill
             ctx.fillRect(startPoint.col * cellSize, startPoint.row * cellSize, cellSize, cellSize);
             ctx.strokeStyle = '#000000'; // Black border
@@ -189,7 +186,7 @@
             ctx.fillStyle = '#000000'; // Black circle
             ctx.fill();
 
-            // Draw end point (subtle white fill with black border)
+            // Draw end point (white fill with black border)
             ctx.fillStyle = '#ffffff'; // White fill
             ctx.fillRect(endPoint.col * cellSize, endPoint.row * cellSize, cellSize, cellSize);
             ctx.strokeStyle = '#000000'; // Black border
@@ -205,7 +202,7 @@
             ctx.lineTo(endPoint.col * cellSize + cellSize * 0.8, endPoint.row * cellSize + cellSize * 0.8);
             ctx.stroke();
 
-            drawBall();
+            drawBall(); // Draw the ball last, so it appears on top of the maze
         }
 
         /**
@@ -213,20 +210,25 @@
          */
         function drawBall() {
             ctx.beginPath();
-            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-            ctx.fillStyle = '#e53e3e';
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2); // Draw a circle
+            ctx.fillStyle = '#e53e3e'; // Red color for the ball
             ctx.fill();
         }
 
         /**
          * Checks if a specific point (e.g., part of the ball) is inside a maze wall.
+         * @param {number} x - X coordinate of the point to check.
+         * @param {number} y - Y coordinate of the point to check.
+         * @returns {boolean} True if the point is within a wall cell, false otherwise.
          */
         function isWallAt(x, y) {
-            if (x < 0 || x >= mazeCanvas.width || y < 0 || y >= mazeCanvas.height) {
+            // Treat points outside canvas boundaries as walls
+            if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) {
                 return true;
             }
-            const col = Math.floor(x / cellSize);
-            const row = Math.floor(y / cellSize);
+            const col = Math.floor(x / cellSize); // Get column index
+            const row = Math.floor(y / cellSize); // Get row index
+            // Check if the corresponding cell in the maze array is a wall (value 1)
             return maze[row] && maze[row][col] === 1;
         }
 
@@ -237,267 +239,199 @@
          */
         function animate() {
             if (gameWon) {
-                cancelAnimationFrame(animationFrameId);
+                cancelAnimationFrame(animationFrameId); // Stop the animation if game is won
                 return;
             }
 
+            // Calculate the vector from the ball's current position to the target position
             const dx_target = targetX - ball.x;
             const dy_target = targetY - ball.y;
             const distance_to_target = Math.sqrt(dx_target * dx_target + dy_target * dy_target);
 
+            // Apply force (acceleration) towards the target if the pointer is down
+            // and the ball is not extremely close to the target (to prevent jitter)
             if (distance_to_target > 2 && (mouse.isDown || touch.isDown)) {
                 ball.vx += (dx_target / distance_to_target) * ball.speed;
                 ball.vy += (dy_target / distance_to_target) * ball.speed;
             }
 
+            // Apply damping (friction) to gradually slow down the ball
             ball.vx *= ball.damping;
             ball.vy *= ball.damping;
 
+            // Limit the maximum speed of the ball
             const currentSpeed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-            const maxSpeed = cellSize * 0.5; /* Adjusted max speed for faster ball */
+            const maxSpeed = cellSize * 0.5; /* Max speed (from previous version's faster ball) */
             if (currentSpeed > maxSpeed) {
                 ball.vx = (ball.vx / currentSpeed) * maxSpeed;
                 ball.vy = (ball.vy / currentSpeed) * maxSpeed;
             }
 
-            let newBallX = ball.x + ball.vx;
-            let newBallY = ball.y + ball.vy;
+            let newBallX = ball.x + ball.vx; // Predicted next X position
+            let newBallY = ball.y + ball.vy; // Predicted next Y position
 
             let collidedX = false;
             let collidedY = false;
 
+            // Collision detection and response for horizontal (X-axis) movement
+            // Check multiple points around the ball's circumference at its predicted new X position
             const checkPointsX = [
-                { x: newBallX - ball.radius, y: ball.y + 1 },
-                { x: newBallX + ball.radius, y: ball.y + 1 },
-                { x: newBallX - ball.radius, y: ball.y - 1 },
-                { x: newBallX + ball.radius, y: ball.y - 1 },
-                { x: newBallX - ball.radius, y: ball.y },
-                { x: newBallX + ball.radius, y: ball.y }
+                { x: newBallX - ball.radius, y: ball.y + 1 },    // Left, slightly below center
+                { x: newBallX + ball.radius, y: ball.y + 1 },   // Right, slightly below center
+                { x: newBallX - ball.radius, y: ball.y - 1 }, // Left, slightly above center
+                { x: newBallX + ball.radius, y: ball.y - 1 },// Right, slightly above center
+                { x: newBallX - ball.radius, y: ball.y },         // Left center
+                { x: newBallX + ball.radius, y: ball.y }         // Right center
             ];
             for (const p of checkPointsX) {
                 if (isWallAt(p.x, p.y)) {
                     collidedX = true;
-                    break;
+                    break; // Found a collision, no need to check further points for X
                 }
             }
 
             if (collidedX) {
-                ball.vx = 0;
+                ball.vx = 0; // Stop horizontal movement immediately
+                // Adjust ball's X position to "snap" it out of the wall, preventing sticking
                 const currentCellCol = Math.floor(ball.x / cellSize);
-                if (newBallX > ball.x) {
+                if (newBallX > ball.x) { // Moving right, hit wall on right
                     ball.x = currentCellCol * cellSize + cellSize - ball.radius - 1;
-                } else {
+                } else { // Moving left, hit wall on left
                     ball.x = currentCellCol * cellSize + ball.radius + 1;
                 }
             } else {
-                ball.x = newBallX;
+                ball.x = newBallX; // If no collision, update ball's X position
             }
 
+            // Collision detection and response for vertical (Y-axis) movement
+            // Check multiple points around the ball's circumference at its predicted new Y position
             const checkPointsY = [
-                { x: ball.x + 1, y: newBallY - ball.radius },
-                { x: ball.x + 1, y: newBallY + ball.radius },
-                { x: ball.x - 1, y: newBallY - ball.radius },
-                { x: ball.x - 1, y: newBallY + ball.radius },
-                { x: ball.x, y: newBallY - ball.radius },
-                { x: ball.x, y: newBallY + ball.radius }
+                { x: ball.x + 1, y: newBallY - ball.radius },    // Top, slightly right of center
+                { x: ball.x + 1, y: newBallY + ball.radius },   // Bottom, slightly right of center
+                { x: ball.x - 1, y: newBallY - ball.radius }, // Top, slightly left of center
+                { x: ball.x - 1, y: newBallY + ball.radius },// Bottom, slightly left of center
+                { x: ball.x, y: newBallY - ball.radius },             // Top center
+                { x: ball.x, y: newBallY + ball.radius }           // Bottom center
             ];
             for (const p of checkPointsY) {
                 if (isWallAt(p.x, p.y)) {
                     collidedY = true;
-                    break;
+                    break; // Found a collision, no need to check further points for Y
                 }
             }
 
             if (collidedY) {
-                ball.vy = 0;
+                ball.vy = 0; // Stop vertical movement immediately
+                // Adjust ball's Y position to "snap" it out of the wall
                 const currentCellRow = Math.floor(ball.y / cellSize);
-                if (newBallY > ball.y) {
+                if (newBallY > ball.y) { // Moving down, hit wall on bottom
                     ball.y = currentCellRow * cellSize + cellSize - ball.radius - 1;
-                } else {
+                } else { // Moving up, hit wall on top
                     ball.y = currentCellRow * cellSize + ball.radius + 1;
                 }
             } else {
-                ball.y = newBallY;
+                ball.y = newBallY; // If no collision, update ball's Y position
             }
 
-            ball.x = Math.max(ball.radius, Math.min(ball.x, mazeCanvas.width - ball.radius));
-            ball.y = Math.max(ball.radius, Math.min(ball.y, mazeCanvas.height - ball.radius));
+            // Clamp ball position within canvas boundaries to ensure it never leaves the play area
+            ball.x = Math.max(ball.radius, Math.min(ball.x, canvas.width - ball.radius));
+            ball.y = Math.max(ball.radius, Math.min(ball.y, canvas.height - ball.radius));
 
-            drawMaze();
-            checkWinCondition();
+            drawMaze();          // Redraw the entire game state with updated ball position
+            checkWinCondition(); // Check if the ball has reached the end point
 
+            // Request the next animation frame, creating a continuous loop
             animationFrameId = requestAnimationFrame(animate);
+        }
+
+        /**
+         * Sets the target coordinates for the ball based on the user's mouse or touch input.
+         * @param {number} clientX - The X coordinate of the input event relative to the viewport.
+         * @param {number} clientY - The Y coordinate of the input event relative to the viewport.
+         */
+        function setTargetPosition(clientX, clientY) {
+            if (gameWon) return; // Ignore input if the game is already won
+
+            // Get the canvas's size and position relative to the viewport
+            const rect = canvas.getBoundingClientRect();
+            // Calculate target coordinates relative to the canvas
+            targetX = clientX - rect.left;
+            targetY = clientY - rect.top;
+
+            // Clamp target coordinates to stay within canvas bounds
+            targetX = Math.max(0, Math.min(targetX, canvas.width));
+            targetY = Math.max(0, Math.min(targetY, canvas.height));
         }
 
         /**
          * Checks if the ball has reached the end point of the maze.
          */
         function checkWinCondition() {
+            // Get the grid cell coordinates of the ball
             const ballGridCol = Math.floor(ball.x / cellSize);
             const ballGridRow = Math.floor(ball.y / cellSize);
 
+            // Check if ball is in the same grid cell as the end point and game is not already won
             if (ballGridCol === endPoint.col && ballGridRow === endPoint.row && !gameWon) {
-                gameWon = true;
-                ctx.fillStyle = 'rgba(72, 187, 120, 0.5)';
-                ctx.fillRect(0, 0, mazeCanvas.width, mazeCanvas.height);
-                cancelAnimationFrame(animationFrameId);
+                gameWon = true; // Set game won state
+                ctx.fillStyle = 'rgba(72, 187, 120, 0.5)'; // Apply a semi-transparent green overlay for visual feedback
+                ctx.fillRect(0, 0, canvas.width, canvas.height); // Draw the overlay
+                cancelAnimationFrame(animationFrameId); // Stop the animation loop as the game is over
             }
         }
 
         // --- Event Listeners for Mouse and Touch Interactions ---
-        mazeCanvas.addEventListener('mousedown', (e) => {
+
+        // Mouse events (for desktop interaction)
+        canvas.addEventListener('mousedown', (e) => {
             mouse.isDown = true;
             setTargetPosition(e.clientX, e.clientY);
         });
 
-        mazeCanvas.addEventListener('mousemove', (e) => {
+        canvas.addEventListener('mousemove', (e) => {
             if (mouse.isDown && gameStarted && !gameWon) {
                 setTargetPosition(e.clientX, e.clientY);
             }
         });
 
-        mazeCanvas.addEventListener('mouseup', () => {
+        canvas.addEventListener('mouseup', () => {
             mouse.isDown = false;
         });
 
-        mazeCanvas.addEventListener('mouseleave', () => {
+        canvas.addEventListener('mouseleave', () => {
             mouse.isDown = false;
         });
 
-        mazeCanvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
+        // Touch events (for mobile interaction)
+        // `passive: false` is crucial here to allow `e.preventDefault()` to stop default browser behaviors (like scrolling)
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent default browser touch actions
             touch.isDown = true;
-            const touch = e.touches[0];
+            const touch = e.touches[0]; // Get the first touch point
             setTargetPosition(touch.clientX, touch.clientY);
         }, { passive: false });
 
-        mazeCanvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault(); // Prevent default browser touch actions
             if (touch.isDown && gameStarted && !gameWon) {
-                const touch = e.touches[0];
+                const touch = e.touches[0]; // Get the first touch point
                 setTargetPosition(touch.clientX, touch.clientY);
             }
         }, { passive: false });
 
-        mazeCanvas.addEventListener('touchend', () => {
+        canvas.addEventListener('touchend', () => {
             touch.isDown = false;
         });
 
-        mazeCanvas.addEventListener('touchcancel', () => {
+        canvas.addEventListener('touchcancel', () => {
             touch.isDown = false;
         });
 
-        // --- Three.js Galaxy Background Logic ---
-        const backgroundCanvas = document.getElementById('backgroundCanvas');
-        let scene, camera, renderer, stars;
-        let starGeo;
+        // Handle window resize to ensure the canvas scales correctly on different screen sizes
+        window.addEventListener('resize', initializeGame);
 
-        function initThreeJS() {
-            // Set dimensions for the background canvas
-            backgroundCanvas.width = window.innerWidth;
-            backgroundCanvas.height = window.innerHeight;
-
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
-            camera.position.z = 1; // Pull camera back slightly
-            camera.rotation.x = Math.PI / 2; // Look down into the starfield
-
-            renderer = new THREE.WebGLRenderer({ canvas: backgroundCanvas, alpha: true }); // Alpha true for transparency
-            renderer.setSize(window.innerWidth, window.innerHeight);
-
-            // Create Starfield
-            starGeo = new THREE.BufferGeometry();
-            const positions = [];
-            const velocities = []; // Store velocity for each star
-
-            for (let i = 0; i < 6000; i++) { // More stars for a denser field
-                positions.push(Math.random() * 600 - 300); // X
-                positions.push(Math.random() * 600 - 300); // Y
-                positions.push(Math.random() * 600 - 300); // Z
-                velocities.push(0); // Initial velocity for Z-axis movement
-            }
-            starGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-            starGeo.setAttribute('velocity', new THREE.Float32BufferAttribute(velocities, 1)); // Single component for Z velocity
-
-            const starMaterial = new THREE.PointsMaterial({
-                color: 0xaaaaaa, // Greyish white stars
-                size: 0.7, // Smaller size for more granular stars
-                map: createStarTexture(), // Use a small, circular texture for stars
-                transparent: true,
-                blending: THREE.AdditiveBlending // For brighter, glowing stars
-            });
-
-            stars = new THREE.Points(starGeo, starMaterial);
-            scene.add(stars);
-
-            window.addEventListener('resize', onWindowResizeThreeJS, false); // Handle resize for 3D canvas
-        }
-
-        function createStarTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 16;
-            canvas.height = 16;
-            const context = canvas.getContext('2d');
-            const gradient = context.createRadialGradient(
-                canvas.width / 2,
-                canvas.height / 2,
-                0,
-                canvas.width / 2,
-                canvas.height / 2,
-                canvas.width / 2
-            );
-            gradient.addColorStop(0, 'rgba(255,255,255,1)');
-            gradient.addColorStop(0.5, 'rgba(255,255,255,0.5)');
-            gradient.addColorStop(1, 'rgba(255,255,255,0)');
-            context.fillStyle = gradient;
-            context.fillRect(0, 0, canvas.width, canvas.height);
-            return new THREE.CanvasTexture(canvas);
-        }
-
-
-        function animateThreeJS() {
-            // Stars movement
-            starGeo.attributes.position.array.forEach((_, i) => {
-                if (i % 3 === 2) { // Z-coordinate
-                    starGeo.attributes.position.array[i] += starGeo.attributes.velocity.array[i / 3];
-                    starGeo.attributes.velocity.array[i / 3] += 0.0005; // Accelerate stars slightly
-
-                    // Reset star position if it moves past the camera
-                    if (starGeo.attributes.position.array[i] > 200) { // If star moves too close
-                        starGeo.attributes.position.array[i] = -300; // Reset far back
-                        starGeo.attributes.velocity.array[i / 3] = 0; // Reset velocity
-                    }
-                }
-            });
-            starGeo.attributes.position.needsUpdate = true; // Tell Three.js to update positions
-
-            // Rotate starfield slightly for dynamic feel
-            stars.rotation.z += 0.0005;
-
-            renderer.render(scene, camera);
-            requestAnimationFrame(animateThreeJS);
-        }
-
-        function onWindowResizeThreeJS() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            backgroundCanvas.width = window.innerWidth;
-            backgroundCanvas.height = window.innerHeight;
-        }
-
-        // Initialize games when window loads
-        window.onload = function() {
-            initializeGame(); // Initialize the 2D maze game
-            initThreeJS();    // Initialize the 3D galaxy background
-            animateThreeJS(); // Start the 3D animation loop
-        };
-
-        // Handle window resize for both canvases
-        window.addEventListener('resize', () => {
-            initializeGame(); // Re-initialize maze for new size
-            onWindowResizeThreeJS(); // Adjust 3D background size
-        });
+        // Initial game setup when the entire window content (including images, etc.) has loaded
+        window.onload = initializeGame;
     </script>
 </body>
 </html>
