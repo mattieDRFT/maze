@@ -12,7 +12,7 @@
         /* Base styles for the body to provide a black background and center the game */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #000000; /* Changed to black background */
+            background-color: #000000; /* Black background */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -36,8 +36,8 @@
 
         /* Styling for the game canvas itself */
         canvas {
-            background-color: #ffffff; /* Changed to white for maze paths */
-            border: 4px solid #000000; /* Changed to black border to contrast with white maze */
+            background-color: #FFFF00; /* Changed to glowing yellow for maze paths */
+            border: 4px solid #000000; /* Black border to contrast with yellow maze */
             border-radius: 0.5rem; /* Rounded corners for the canvas */
             /* Prevents common mobile browser gestures like scrolling/zooming,
                allowing touch events to be used for game control */
@@ -174,8 +174,8 @@
                 }
             }
 
-            // Draw start point (white fill with black border)
-            ctx.fillStyle = '#ffffff'; // White fill
+            // Draw start point (yellow fill with black border)
+            ctx.fillStyle = '#FFFF00'; // Yellow fill
             ctx.fillRect(startPoint.col * cellSize, startPoint.row * cellSize, cellSize, cellSize);
             ctx.strokeStyle = '#000000'; // Black border
             ctx.lineWidth = 1;
@@ -186,8 +186,8 @@
             ctx.fillStyle = '#000000'; // Black circle
             ctx.fill();
 
-            // Draw end point (white fill with black border)
-            ctx.fillStyle = '#ffffff'; // White fill
+            // Draw end point (yellow fill with black border)
+            ctx.fillStyle = '#FFFF00'; // Yellow fill
             ctx.fillRect(endPoint.col * cellSize, endPoint.row * cellSize, cellSize, cellSize);
             ctx.strokeStyle = '#000000'; // Black border
             ctx.lineWidth = 1;
