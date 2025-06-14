@@ -6,7 +6,7 @@
     <title>Maze Runner</title>
     <!-- Google Fonts - Inter for clean typography -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS CDN for easy styling --> 
+    <!-- Tailwind CSS CDN for easy styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Base styles for the html and body elements inside the iframe */
@@ -20,7 +20,6 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* touch-action: none is handled globally in JS for iOS, so removed from body CSS */
         }
 
         /* Styling for the main game container */
@@ -34,8 +33,8 @@
             box-shadow: none; /* Remove shadows */
             width: 100%; /* Allow container to take full width of iframe */
             height: 100%; /* Allow container to take full height of iframe */
-            position: relative; /* Added for potential layering, though not strictly needed here */
-            z-index: 1; /* Added for potential layering, though not strictly needed here */
+            position: relative;
+            z-index: 1;
         }
 
         /* Styling for the game canvas itself */
@@ -47,7 +46,6 @@
                allowing touch events to be used for game control */
             touch-action: none; /* Keep touch-action on canvas */
             display: block; /* Removes extra space below canvas */
-            /* Canvas dimensions are set directly via JavaScript for maximum fit */
         }
     </style>
 </head>
@@ -65,51 +63,48 @@
         let mouse = { x: 0, y: 0, isDown: false };
         let touch = { x: 0, y: 0, isDown: false };
 
-        // Maze configuration - 1 for wall, 0 for path. This map is unchanged.
+        // Maze configuration - A smaller, simpler maze for better mobile fit.
         const maze = [
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,1,1,1,0,1,0,1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,0,1,1,1,1,1,1,1,1,1,0,1],
-            [1,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,1],
-            [1,0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,1,1,1,1,1,0,1,0,1],
-            [1,0,1,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,0,0,0,0,0,1,0,1,0,1],
-            [1,0,1,0,1,1,1,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,1,0,1,1,1,0,1,0,1,0,1],
-            [1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1,0,1,0,0,0,1,0,1,0,1,0,1],
-            [1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,0,1,0,1,1,1,0,1,0,1,0,1,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,1,0,1,0,1,0,1],
-            [1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
-            [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
-            [1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
-            [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
-            [1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1],
-            [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,1,0,1,0,1,0,1,0,1],
-            [1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,0,1,0,1,0,1,0,1,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,1,0,1,0,1,0,1],
-            [1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1],
-            [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
-            [1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,0,1,0,1,0,1,1,1,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,1],
-            [1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1],
-            [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0,1],
-            [1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1,0,1],
-            [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,1],
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,1,0,0,0,0,0,1,0,0,0,1],
+            [1,1,1,0,1,0,1,1,1,0,1,0,1,0,1],
+            [1,0,0,0,0,0,1,0,1,0,0,0,1,0,1],
+            [1,0,1,1,1,1,1,0,1,1,1,1,1,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,0,1,1,1,1,1,0,1],
+            [1,0,0,0,0,0,1,0,1,0,0,0,1,0,1],
+            [1,0,1,1,1,0,1,0,1,0,1,0,1,0,1],
+            [1,0,1,0,0,0,1,0,1,0,1,0,1,0,1],
+            [1,0,1,0,1,1,1,0,1,0,1,0,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
         ];
 
+
         let cellSize;
-        // Ball physics parameters adjusted for the larger maze
-        let ball = { x: 0, y: 0, radius: 0, vx: 0, vy: 0, speed: 1.2, damping: 0.7 }; // Further increased speed, slightly lower damping
+        // Ball physics parameters adjusted for the smaller maze (might feel faster with same values)
+        let ball = { x: 0, y: 0, radius: 0, vx: 0, vy: 0, speed: 1.0, damping: 0.8 };
         let targetX = 0;
         let targetY = 0;
         let gameStarted = false;
         let gameWon = false;
         let animationFrameId; // Stores the ID from requestAnimationFrame for cancellation
 
-        // Start and End points (in maze grid coordinates)
+        // Start and End points (in maze grid coordinates for the new maze)
         const startPoint = { row: 1, col: 1 };
         const endPoint = { row: maze.length - 2, col: maze[0].length - 2 }; // Second to last row, second to last column
+
+        /**
+         * Draws the red ball at its current calculated position.
+         */
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2); // Draw a circle
+            ctx.fillStyle = '#e53e3e'; // Red color for the ball
+            ctx.fill();
+        }
 
         /**
          * Initializes or resets the game state.
@@ -129,18 +124,16 @@
             canvas.height = window.innerHeight;
 
             // Calculate cellSize to ensure the entire maze fits within the canvas
-            // This prioritizes fitting the whole maze into the available iframe space.
             const cellSizeFromWidth = Math.floor(canvas.width / cols);
             const cellSizeFromHeight = Math.floor(canvas.height / rows);
             cellSize = Math.min(cellSizeFromWidth, cellSizeFromHeight);
 
             // Ensure a minimum practical size for touch, even if calculations suggest smaller.
-            // This acts as a floor to prevent elements from becoming minuscule.
-            // A higher minimum for better touch interaction.
-            cellSize = Math.max(cellSize, 40); // Set a strong minimum cell size (e.g., 40px)
+            // This acts as a floor to prevent elements from becoming minuscule on tiny screens.
+            cellSize = Math.max(cellSize, 40); // Maintain a strong minimum cell size (e.g., 40px)
 
-            // Re-calculate canvas dimensions based on the final cellSize
-            // This is important to draw the maze accurately with the determined cellSize.
+            // Re-calculate canvas dimensions based on the final determined cellSize.
+            // This makes sure the canvas's drawing area perfectly matches the maze at its best possible size.
             canvas.width = cols * cellSize;
             canvas.height = rows * cellSize;
 
@@ -206,16 +199,6 @@
             ctx.stroke();
 
             drawBall(); // Draw the ball last, so it appears on top of the maze
-        }
-
-        /**
-         * Draws the red ball at its current calculated position.
-         */
-        function drawBall() {
-            ctx.beginPath();
-            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2); // Draw a circle
-            ctx.fillStyle = '#e53e3e'; // Red color for the ball
-            ctx.fill();
         }
 
         /**
@@ -446,26 +429,3 @@
     </script>
 </body>
 </html>
-```
-
----
-
-### Next Steps for Testing:
-
-After you update your `index.html` file on GitHub with this new code, please:
-
-1.  **Commit the changes** on GitHub.
-2.  **Wait a minute or two** for GitHub Pages to deploy the update.
-3.  **Crucially, modify the iframe embed code on your Squarespace page.** Change the `height` property of the `<iframe>` tag to use a relative unit like `100vh` (100% of viewport height) instead of a fixed `1500px`.
-
-    **Current Squarespace iframe code:**
-    `<iframe src="https://mattiedrft.github.io/maze/" style="width:100%; height:1500px; border:none; overflow:hidden;" title="Maze Game"></iframe>`
-
-    **Suggested change to try (in your Squarespace editor):**
-    `<iframe src="https://mattiedrft.github.io/maze/" style="width:100%; height:100vh; border:none; overflow:hidden;" title="Maze Game"></iframe>`
-
-    Or, if `100vh` causes issues or is too large given other Squarespace elements, experiment with a smaller `vh` value (e.g., `80vh` or `90vh`) or `height: 100%` if your Squarespace section containing the iframe has a defined height.
-
-4.  **Clear your browser cache** on your iOS device (or open in a private/incognito tab) and then test your Squarespace page again.
-
-The combination of ensuring your game fills its iframe's dimensions and making the iframe's height responsive to the device screen should finally allow iOS to properly register touch inputs for your game. Please let me know how this works o
