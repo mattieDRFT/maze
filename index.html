@@ -19,7 +19,7 @@
             min-height: 100vh; /* Full viewport height */
             margin: 0; /* Remove default body margin */
             overflow: hidden; /* Prevent body scrolling */
-            /* Removed touch-action: none from body - will handle globally in JS for iOS */
+            /* touch-action: none is handled globally in JS for iOS */
         }
 
         /* Styling for the main game container */
@@ -43,33 +43,27 @@
             /* Prevents common mobile browser gestures like scrolling/zooming,
                allowing touch events to be used for game control */
             touch-action: none; /* Keep touch-action on canvas */
-            /* Removed pointer-events: auto from canvas - was not in original working version */
             display: block; /* Removes extra space below canvas */
             max-width: 100%; /* Ensures canvas scales down on small screens */
             height: auto; /* Maintains aspect ratio when scaling */
         }
-
-        /* Message box and debug info styles are removed as the elements are removed */
-        /* Reset button styles are removed as the element is removed */
     </style>
 </head>
 <body>
     <div class="game-container">
         <canvas id="mazeCanvas"></canvas>
-        <!-- Message box, debug info, and reset button elements are removed as per request -->
     </div>
 
     <script>
         // Get references to DOM elements
         const canvas = document.getElementById('mazeCanvas');
         const ctx = canvas.getContext('2d');
-        // messageBox, resetButton, and debugInfo references are removed
 
         // Mouse and touch state variables
         let mouse = { x: 0, y: 0, isDown: false };
         let touch = { x: 0, y: 0, isDown: false };
 
-        // Maze configuration - 1 for wall, 0 for path. This map is unchanged as per your request.
+        // Maze configuration - 1 for wall, 0 for path. This map is unchanged.
         const maze = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -103,8 +97,8 @@
         ];
 
         let cellSize;
-        // Ball physics parameters remain unchanged as per previous versions
-        let ball = { x: 0, y: 0, radius: 0, vx: 0, vy: 0, speed: 0.7, damping: 0.85 };
+        // Ball physics parameters adjusted for previous versions
+        let ball = { x: 0, y: 0, radius: 0, vx: 0, vy: 0, speed: 0.9, damping: 0.8 }; // Increased speed
         let targetX = 0;
         let targetY = 0;
         let gameStarted = false;
@@ -135,8 +129,8 @@
             // Calculate the ideal cell size to fit the maze within the max dimensions
             const tempCellSizeWidth = Math.floor(maxCanvasWidth / cols);
             const tempCellSizeHeight = Math.floor(maxCanvasHeight / rows);
-            // Increased cellSize cap to 40 for a larger maze and ball
-            cellSize = Math.min(tempCellSizeWidth, tempCellSizeHeight, 40);
+            // Increased cellSize cap to 60 for a significantly larger maze and ball
+            cellSize = Math.min(tempCellSizeWidth, tempCellSizeHeight, 60);
 
             // Set canvas dimensions based on calculated cell size
             canvas.width = cols * cellSize;
@@ -262,8 +256,8 @@
 
             // Limit the maximum speed of the ball
             const currentSpeed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-            // Increased maxSpeed multiplier from 0.5 to 0.6 for better feel with larger maze
-            const maxSpeed = cellSize * 0.6;
+            // Increased maxSpeed multiplier to 0.7 for better feel with larger maze
+            const maxSpeed = cellSize * 0.7;
             if (currentSpeed > maxSpeed) {
                 ball.vx = (ball.vx / currentSpeed) * maxSpeed;
                 ball.vy = (ball.vy / currentSpeed) * maxSpeed;
@@ -385,9 +379,11 @@
         // --- Event Listeners for Mouse and Touch Interactions ---
 
         // Dummy touchstart listener for iOS iframe compatibility (kept for activation)
+        // This is a common workaround for iOS not properly activating touch events in iframes.
         document.addEventListener('touchstart', () => { /* no-op */ }, { passive: false });
 
-        // NEW: Global touchmove listener to prevent default scrolling across the entire iframe content
+        // Global touchmove listener to explicitly prevent default scrolling behaviour across the entire iframe content.
+        // This is crucial for preventing iOS from interpreting game touches as page scrolls.
         window.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
 
         // Mouse events (for desktop interaction)
@@ -443,3 +439,11 @@
     </script>
 </body>
 </html>
+```
+After you update your `index.html` file on GitHub with this new code, please:
+
+1.  **Commit the changes** on GitHub.
+2.  **Wait a minute or two** for GitHub Pages to deploy the update.
+3.  **Clear your browser cache** on your iOS device (or open in a private/incognito tab) and then test your Squarespace page again.
+
+Making the game elements significantly larger should greatly improve the usability on phone screens. Let me know if this hel
