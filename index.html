@@ -47,7 +47,11 @@
             display: block; /* Removes extra space below canvas */
             max-width: 100%; /* Ensures canvas scales down on small screens */
             height: auto; /* Maintains aspect ratio when scaling */
-        </style>
+        }
+
+        /* Message box and debug info styles are removed as the elements are removed */
+        /* Reset button styles are removed as the element is removed */
+    </style>
 </head>
 <body>
     <div class="game-container">
@@ -131,8 +135,8 @@
             // Calculate the ideal cell size to fit the maze within the max dimensions
             const tempCellSizeWidth = Math.floor(maxCanvasWidth / cols);
             const tempCellSizeHeight = Math.floor(maxCanvasHeight / rows);
-            // Reverted to a balanced cellSize to ensure maze is large enough and playable
-            cellSize = Math.min(tempCellSizeWidth, tempCellSizeHeight, 20);
+            // Increased cellSize cap to 40 for a larger maze and ball
+            cellSize = Math.min(tempCellSizeWidth, tempCellSizeHeight, 40);
 
             // Set canvas dimensions based on calculated cell size
             canvas.width = cols * cellSize;
@@ -258,7 +262,8 @@
 
             // Limit the maximum speed of the ball
             const currentSpeed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-            const maxSpeed = cellSize * 0.5; /* Max speed (from previous version's faster ball) */
+            // Increased maxSpeed multiplier from 0.5 to 0.6 for better feel with larger maze
+            const maxSpeed = cellSize * 0.6;
             if (currentSpeed > maxSpeed) {
                 ball.vx = (ball.vx / currentSpeed) * maxSpeed;
                 ball.vy = (ball.vy / currentSpeed) * maxSpeed;
