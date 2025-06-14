@@ -98,7 +98,8 @@
 
         let cellSize;
         // Ball physics parameters adjusted for previous versions
-        let ball = { x: 0, y: 0, radius: 0, vx: 0, vy: 0, speed: 0.9, damping: 0.8 }; // Increased speed
+        // Increased speed and decreased damping for more sensitive control
+        let ball = { x: 0, y: 0, radius: 0, vx: 0, vy: 0, speed: 1.0, damping: 0.75 }; // Increased speed again
         let targetX = 0;
         let targetY = 0;
         let gameStarted = false;
@@ -119,18 +120,11 @@
                 cancelAnimationFrame(animationFrameId);
             }
 
-            // Determine maximum canvas dimensions based on window size for responsiveness
-            const maxCanvasWidth = window.innerWidth * 0.9; // Use up to 90% of window width
-            const maxCanvasHeight = window.innerHeight * 0.8; // Use up to 80% of window height
-
             const rows = maze.length;
             const cols = maze[0].length;
 
-            // Calculate the ideal cell size to fit the maze within the max dimensions
-            const tempCellSizeWidth = Math.floor(maxCanvasWidth / cols);
-            const tempCellSizeHeight = Math.floor(maxCanvasHeight / rows);
-            // Increased cellSize cap to 60 for a significantly larger maze and ball
-            cellSize = Math.min(tempCellSizeWidth, tempCellSizeHeight, 60);
+            // NEW: Set a larger fixed cellSize. The responsive CSS will handle shrinking if needed.
+            cellSize = 40; // Increased fixed cell size to make maze much larger by default
 
             // Set canvas dimensions based on calculated cell size
             canvas.width = cols * cellSize;
@@ -256,8 +250,7 @@
 
             // Limit the maximum speed of the ball
             const currentSpeed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-            // Increased maxSpeed multiplier to 0.7 for better feel with larger maze
-            const maxSpeed = cellSize * 0.7;
+            const maxSpeed = cellSize * 0.7; /* Max speed (tuned for larger ball/maze) */
             if (currentSpeed > maxSpeed) {
                 ball.vx = (ball.vx / currentSpeed) * maxSpeed;
                 ball.vy = (ball.vy / currentSpeed) * maxSpeed;
@@ -412,14 +405,14 @@
             e.preventDefault(); // Prevent default browser touch actions for canvas touches
             touch.isDown = true;
             const touch = e.touches[0]; // Get the first touch point
-            setTargetPosition(touch.clientX, touch.clientY);
+            setTargetPosition(touch.clientX, e.clientY); // Use clientY directly for touch input
         }, { passive: false });
 
         canvas.addEventListener('touchmove', (e) => {
             e.preventDefault(); // Prevent default browser touch actions for canvas touches
             if (touch.isDown && gameStarted && !gameWon) {
                 const touch = e.touches[0]; // Get the first touch point
-                setTargetPosition(touch.clientX, touch.clientY);
+                setTargetPosition(touch.clientX, touch.clientY); // Use clientY directly for touch input
             }
         }, { passive: false });
 
@@ -439,11 +432,3 @@
     </script>
 </body>
 </html>
-```
-After you update your `index.html` file on GitHub with this new code, please:
-
-1.  **Commit the changes** on GitHub.
-2.  **Wait a minute or two** for GitHub Pages to deploy the update.
-3.  **Clear your browser cache** on your iOS device (or open in a private/incognito tab) and then test your Squarespace page again.
-
-Making the game elements significantly larger should greatly improve the usability on phone screens. Let me know if this hel
