@@ -19,7 +19,7 @@
             min-height: 100vh; /* Full viewport height */
             margin: 0; /* Remove default body margin */
             overflow: hidden; /* Prevent body scrolling */
-            /* touch-action: none is handled globally in JS for iOS */
+            /* touch-action: none is handled globally in JS for iOS, so removed from body CSS */
         }
 
         /* Styling for the main game container */
@@ -31,8 +31,9 @@
             padding: 0; /* Remove padding for a cleaner look */
             border-radius: 0; /* Remove rounded corners */
             box-shadow: none; /* Remove shadows */
-            max-width: 90%; /* Max width for responsiveness on larger screens */
-            width: fit-content; /* Adjust width to content */
+            /* Removed max-width and width: fit-content to allow canvas to fully control sizing */
+            width: 100%; /* Allow container to take full width */
+            height: 100%; /* Allow container to take full height */
         }
 
         /* Styling for the game canvas itself */
@@ -44,8 +45,7 @@
                allowing touch events to be used for game control */
             touch-action: none; /* Keep touch-action on canvas */
             display: block; /* Removes extra space below canvas */
-            max-width: 100%; /* Ensures canvas scales down on small screens */
-            height: auto; /* Maintains aspect ratio when scaling */
+            /* Removed max-width: 100% and height: auto; -- we will set width/height directly in JS */
         }
     </style>
 </head>
@@ -122,14 +122,22 @@
             const rows = maze.length;
             const cols = maze[0].length;
 
-            // Set a large fixed cellSize for better touch interaction.
-            // Responsive CSS (max-width: 100%) will handle shrinking if the screen is too small,
-            // but the base size is now significantly larger.
-            cellSize = 60; // Significantly increased fixed cell size
+            // Set canvas drawing buffer resolution to match the window (iframe's internal viewport)
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
 
-            // Set canvas dimensions based on calculated cell size
-            canvas.width = cols * cellSize;
-            canvas.height = rows * cellSize;
+            // Calculate cellSize to ensure the entire maze fits within the canvas
+            // Take the smaller dimension (width or height) of the canvas,
+            // divide by the number of columns/rows respectively, and choose the minimum
+            // to ensure the entire maze is visible and as large as possible.
+            const cellSizeFromWidth = Math.floor(canvas.width / cols);
+            const cellSizeFromHeight = Math.floor(canvas.height / rows);
+            cellSize = Math.min(cellSizeFromWidth, cellSizeFromHeight);
+
+            // Ensure a minimum practical size for touch, even if the calculations suggest smaller.
+            // This acts as a floor to prevent elements from becoming minuscule.
+            // Adjust this value (e.g., 20, 30, 40) based on testing on your iOS device.
+            cellSize = Math.max(cellSize, 30); // Set a strong minimum cell size (e.g., 30px)
 
             // Initialize ball's position to the center of the start cell
             ball.radius = cellSize * 0.4; // Ball radius is 40% of cell size
@@ -372,10 +380,12 @@
 
         // --- Event Listeners for Mouse and Touch Interactions ---
 
-        // Dummy touchstart listener for iOS iframe compatibility (kept for activation)
+        // Dummy touchstart listener for iOS iframe compatibility
+        // This is a common workaround for iOS not properly activating touch events in iframes.
         document.addEventListener('touchstart', () => { /* no-op */ }, { passive: false });
 
         // Global touchmove listener to explicitly prevent default scrolling behaviour across the entire iframe content.
+        // This is crucial for preventing iOS from interpreting game touches as page scrolls.
         window.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
 
         // Mouse events (for desktop interaction)
@@ -404,14 +414,14 @@
             e.preventDefault(); // Prevent default browser touch actions for canvas touches
             touch.isDown = true;
             const touch = e.touches[0]; // Get the first touch point
-            setTargetPosition(touch.clientX, touch.clientY); // Use clientY directly for touch input
+            setTargetPosition(touch.clientX, touch.clientY);
         }, { passive: false });
 
         canvas.addEventListener('touchmove', (e) => {
             e.preventDefault(); // Prevent default browser touch actions for canvas touches
             if (touch.isDown && gameStarted && !gameWon) {
                 const touch = e.touches[0]; // Get the first touch point
-                setTargetPosition(touch.clientX, touch.clientY); // Use clientY directly for touch input
+                setTargetPosition(touch.clientX, touch.clientY);
             }
         }, { passive: false });
 
