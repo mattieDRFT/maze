@@ -63,8 +63,8 @@
         let mouse = { x: 0, y: 0, isDown: false };
         let touch = { x: 0, y: 0, isDown: false };
 
-        // Maze configuration - A smaller, simpler maze for better mobile fit.
-        const maze = [
+        // Original maze layout (now treated as the source for transposition)
+        const originalMazeLayout = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,1,0,0,0,0,0,1,0,0,0,1],
             [1,1,1,0,1,0,1,1,1,0,1,0,1,0,1],
@@ -82,6 +82,23 @@
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
         ];
 
+        // Function to transpose the maze (rotate 90 degrees)
+        function transposeMaze(originalMaze) {
+            const rows = originalMaze.length;
+            const cols = originalMaze[0].length;
+            const newMaze = [];
+
+            for (let c = 0; c < cols; c++) {
+                newMaze[c] = [];
+                for (let r = 0; r < rows; r++) {
+                    newMaze[c][r] = originalMaze[r][c];
+                }
+            }
+            return newMaze;
+        }
+
+        // Transpose the maze for portrait orientation
+        const maze = transposeMaze(originalMazeLayout);
 
         let cellSize;
         // Ball physics parameters adjusted for the smaller maze (might feel faster with same values)
@@ -92,9 +109,11 @@
         let gameWon = false;
         let animationFrameId; // Stores the ID from requestAnimationFrame for cancellation
 
-        // Start and End points (in maze grid coordinates for the new maze)
+        // Start and End points (calculated for the transposed maze)
+        // Original (1,1) remains (1,1) after transposition of a square maze.
+        // Original end point (rows-2, cols-2) remains (newRows-2, newCols-2) for transposed.
         const startPoint = { row: 1, col: 1 };
-        const endPoint = { row: maze.length - 2, col: maze[0].length - 2 }; // Second to last row, second to last column
+        const endPoint = { row: maze.length - 2, col: maze[0].length - 2 };
 
         /**
          * Draws the red ball at its current calculated position.
@@ -129,11 +148,9 @@
             cellSize = Math.min(cellSizeFromWidth, cellSizeFromHeight);
 
             // Ensure a minimum practical size for touch, even if calculations suggest smaller.
-            // This acts as a floor to prevent elements from becoming minuscule on tiny screens.
             cellSize = Math.max(cellSize, 40); // Maintain a strong minimum cell size (e.g., 40px)
 
             // Re-calculate canvas dimensions based on the final determined cellSize.
-            // This makes sure the canvas's drawing area perfectly matches the maze at its best possible size.
             canvas.width = cols * cellSize;
             canvas.height = rows * cellSize;
 
@@ -332,8 +349,8 @@
 
         /**
          * Sets the target coordinates for the ball based on the user's mouse or touch input.
-         * @param {number} clientX - The X coordinate of the input event relative to the viewport.
-         * @param {number} clientY - The Y coordinate of the input event relative to the viewport.
+         * @param {number} clientX - The X coordinate of the point to check.
+         * @param {number} clientY - The Y coordinate of the point to check.
          */
         function setTargetPosition(clientX, clientY) {
             if (gameWon) return; // Ignore input if the game is already won
@@ -369,11 +386,9 @@
         // --- Event Listeners for Mouse and Touch Interactions ---
 
         // Dummy touchstart listener for iOS iframe compatibility
-        // This is a common workaround for iOS not properly activating touch events in iframes.
         document.addEventListener('touchstart', () => { /* no-op */ }, { passive: false });
 
         // Global touchmove listener to explicitly prevent default scrolling behaviour across the entire iframe content.
-        // This is crucial for preventing iOS from interpreting game touches as page scrolls.
         window.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
 
         // Mouse events (for desktop interaction)
