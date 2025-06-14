@@ -97,9 +97,8 @@
         ];
 
         let cellSize;
-        // Ball physics parameters adjusted for previous versions
-        // Increased speed and decreased damping for more sensitive control
-        let ball = { x: 0, y: 0, radius: 0, vx: 0, vy: 0, speed: 1.0, damping: 0.75 }; // Increased speed again
+        // Ball physics parameters adjusted for the larger maze
+        let ball = { x: 0, y: 0, radius: 0, vx: 0, vy: 0, speed: 1.2, damping: 0.7 }; // Further increased speed, slightly lower damping
         let targetX = 0;
         let targetY = 0;
         let gameStarted = false;
@@ -123,8 +122,10 @@
             const rows = maze.length;
             const cols = maze[0].length;
 
-            // NEW: Set a larger fixed cellSize. The responsive CSS will handle shrinking if needed.
-            cellSize = 40; // Increased fixed cell size to make maze much larger by default
+            // Set a large fixed cellSize for better touch interaction.
+            // Responsive CSS (max-width: 100%) will handle shrinking if the screen is too small,
+            // but the base size is now significantly larger.
+            cellSize = 60; // Significantly increased fixed cell size
 
             // Set canvas dimensions based on calculated cell size
             canvas.width = cols * cellSize;
@@ -250,7 +251,7 @@
 
             // Limit the maximum speed of the ball
             const currentSpeed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-            const maxSpeed = cellSize * 0.7; /* Max speed (tuned for larger ball/maze) */
+            const maxSpeed = cellSize * 0.8; /* Adjusted max speed for new scale */
             if (currentSpeed > maxSpeed) {
                 ball.vx = (ball.vx / currentSpeed) * maxSpeed;
                 ball.vy = (ball.vy / currentSpeed) * maxSpeed;
@@ -372,11 +373,9 @@
         // --- Event Listeners for Mouse and Touch Interactions ---
 
         // Dummy touchstart listener for iOS iframe compatibility (kept for activation)
-        // This is a common workaround for iOS not properly activating touch events in iframes.
         document.addEventListener('touchstart', () => { /* no-op */ }, { passive: false });
 
         // Global touchmove listener to explicitly prevent default scrolling behaviour across the entire iframe content.
-        // This is crucial for preventing iOS from interpreting game touches as page scrolls.
         window.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
 
         // Mouse events (for desktop interaction)
@@ -405,7 +404,7 @@
             e.preventDefault(); // Prevent default browser touch actions for canvas touches
             touch.isDown = true;
             const touch = e.touches[0]; // Get the first touch point
-            setTargetPosition(touch.clientX, e.clientY); // Use clientY directly for touch input
+            setTargetPosition(touch.clientX, touch.clientY); // Use clientY directly for touch input
         }, { passive: false });
 
         canvas.addEventListener('touchmove', (e) => {
