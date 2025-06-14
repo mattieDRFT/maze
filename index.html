@@ -6,19 +6,20 @@
     <title>Maze Runner</title>
     <!-- Google Fonts - Inter for clean typography -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS CDN for easy styling -->
+    <!-- Tailwind CSS CDN for easy styling --> 
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Base styles for the body to provide a black background and center the game */
-        body {
+        /* Base styles for the html and body elements inside the iframe */
+        html, body {
+            height: 100%; /* Make them fill the full iframe height */
+            width: 100%; /* Make them fill the full iframe width */
+            margin: 0; /* Remove default margins */
+            overflow: hidden; /* Crucial: Prevent scrolling on html/body itself */
             font-family: 'Inter', sans-serif;
             background-color: #000000; /* Black background */
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh; /* Full viewport height */
-            margin: 0; /* Remove default body margin */
-            overflow: hidden; /* Prevent body scrolling */
             /* touch-action: none is handled globally in JS for iOS, so removed from body CSS */
         }
 
@@ -31,9 +32,10 @@
             padding: 0; /* Remove padding for a cleaner look */
             border-radius: 0; /* Remove rounded corners */
             box-shadow: none; /* Remove shadows */
-            /* Removed max-width and width: fit-content to allow canvas to fully control sizing */
-            width: 100%; /* Allow container to take full width */
-            height: 100%; /* Allow container to take full height */
+            width: 100%; /* Allow container to take full width of iframe */
+            height: 100%; /* Allow container to take full height of iframe */
+            position: relative; /* Added for potential layering, though not strictly needed here */
+            z-index: 1; /* Added for potential layering, though not strictly needed here */
         }
 
         /* Styling for the game canvas itself */
@@ -45,7 +47,7 @@
                allowing touch events to be used for game control */
             touch-action: none; /* Keep touch-action on canvas */
             display: block; /* Removes extra space below canvas */
-            /* Removed max-width: 100% and height: auto; -- we will set width/height directly in JS */
+            /* Canvas dimensions are set directly via JavaScript for maximum fit */
         }
     </style>
 </head>
@@ -127,17 +129,20 @@
             canvas.height = window.innerHeight;
 
             // Calculate cellSize to ensure the entire maze fits within the canvas
-            // Take the smaller dimension (width or height) of the canvas,
-            // divide by the number of columns/rows respectively, and choose the minimum
-            // to ensure the entire maze is visible and as large as possible.
+            // This prioritizes fitting the whole maze into the available iframe space.
             const cellSizeFromWidth = Math.floor(canvas.width / cols);
             const cellSizeFromHeight = Math.floor(canvas.height / rows);
             cellSize = Math.min(cellSizeFromWidth, cellSizeFromHeight);
 
-            // Ensure a minimum practical size for touch, even if the calculations suggest smaller.
+            // Ensure a minimum practical size for touch, even if calculations suggest smaller.
             // This acts as a floor to prevent elements from becoming minuscule.
-            // Adjust this value (e.g., 20, 30, 40) based on testing on your iOS device.
-            cellSize = Math.max(cellSize, 30); // Set a strong minimum cell size (e.g., 30px)
+            // A higher minimum for better touch interaction.
+            cellSize = Math.max(cellSize, 40); // Set a strong minimum cell size (e.g., 40px)
+
+            // Re-calculate canvas dimensions based on the final cellSize
+            // This is important to draw the maze accurately with the determined cellSize.
+            canvas.width = cols * cellSize;
+            canvas.height = rows * cellSize;
 
             // Initialize ball's position to the center of the start cell
             ball.radius = cellSize * 0.4; // Ball radius is 40% of cell size
@@ -441,3 +446,26 @@
     </script>
 </body>
 </html>
+```
+
+---
+
+### Next Steps for Testing:
+
+After you update your `index.html` file on GitHub with this new code, please:
+
+1.  **Commit the changes** on GitHub.
+2.  **Wait a minute or two** for GitHub Pages to deploy the update.
+3.  **Crucially, modify the iframe embed code on your Squarespace page.** Change the `height` property of the `<iframe>` tag to use a relative unit like `100vh` (100% of viewport height) instead of a fixed `1500px`.
+
+    **Current Squarespace iframe code:**
+    `<iframe src="https://mattiedrft.github.io/maze/" style="width:100%; height:1500px; border:none; overflow:hidden;" title="Maze Game"></iframe>`
+
+    **Suggested change to try (in your Squarespace editor):**
+    `<iframe src="https://mattiedrft.github.io/maze/" style="width:100%; height:100vh; border:none; overflow:hidden;" title="Maze Game"></iframe>`
+
+    Or, if `100vh` causes issues or is too large given other Squarespace elements, experiment with a smaller `vh` value (e.g., `80vh` or `90vh`) or `height: 100%` if your Squarespace section containing the iframe has a defined height.
+
+4.  **Clear your browser cache** on your iOS device (or open in a private/incognito tab) and then test your Squarespace page again.
+
+The combination of ensuring your game fills its iframe's dimensions and making the iframe's height responsive to the device screen should finally allow iOS to properly register touch inputs for your game. Please let me know how this works o
