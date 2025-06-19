@@ -24,7 +24,7 @@
             background-color: yellow; /* The background of the maze paths themselves (now yellow) */
             border: 2px solid black; /* A clear black border around the maze canvas for contrast */
             display: block; /* Remove extra space below canvas */
-            margin-top: 20px; /* Space above canvas */
+            margin-top: 0; /* No fixed margin, responsive will handle spacing */
             box-shadow: 0 0 25px rgba(0, 0, 0, 0.5); /* Stronger dark glow effect for aesthetic */
             border-radius: 15px; /* Slightly more rounded corners for the canvas */
         }
@@ -96,68 +96,54 @@
         const messageBox = document.getElementById('messageBox');
         const messageText = document.getElementById('messageText');
         const restartButton = document.getElementById('restartButton');
-        const moveOnButton = document.getElementById('moveOnButton'); // Get the new button
+        const moveOnButton = document.getElementById('moveOnButton');
 
-        // --- Game Configuration Constants ---
-        // Increased canvas size for a larger maze with more paths
-        const CANVAS_WIDTH = 1200; 
-        const CANVAS_HEIGHT = 900; 
-        
-        // Balanced CELL_SIZE and BALL_RADIUS for high difficulty AND solvability
-        const CELL_SIZE = 20; // Each maze path/wall cell is 20x20 pixels
-        const BALL_RADIUS = 7; // Ball diameter is 14 pixels, leaving 6 pixels clearance in paths
+        // --- Game Configuration Constants (Base values for maze structure) ---
+        // These define the *number* of columns and rows for the maze, not their pixel size.
+        // This keeps the maze complexity consistent across different screen sizes.
+        const BASE_MAZE_COLS = 60; 
+        const BASE_MAZE_ROWS = 45; 
 
         // Physics constants (retaining values from last good setup)
-        const MOUSE_FORCE_FACTOR = 0.08; // How strongly the mouse attracts the ball
-        const DAMPING_FACTOR = 0.93;     // Simulates friction, reduces velocity over time
-        const MAX_VELOCITY = 8;          // Cap the ball's speed
+        const MOUSE_FORCE_FACTOR = 0.08; 
+        const DAMPING_FACTOR = 0.93;     
+        const MAX_VELOCITY = 8;          
 
-        // Calculate the number of columns and rows based on canvas size and cell size
-        const MAZE_COLS = Math.floor(CANVAS_WIDTH / CELL_SIZE); 
-        const MAZE_ROWS = Math.floor(CANVAS_HEIGHT / CELL_SIZE); 
+        // --- Dynamic Game State Variables ---
+        let MAZE_COLS;   // Actual number of columns for the current canvas size
+        let MAZE_ROWS;   // Actual number of rows for the current canvas size
+        let CELL_SIZE;   // Size of each cell in pixels, calculated dynamically
+        let BALL_RADIUS; // Radius of the ball, calculated dynamically
 
-        // Set the actual canvas dimensions
-        canvas.width = CANVAS_WIDTH;
-        canvas.height = CANVAS_HEIGHT;
-
-        // --- Game State Variables ---
         let maze; // 2D array representing the maze grid (0 = path, 1 = wall)
         let ballX, ballY; // Ball's current position (center coordinates)
         let ballVelX, ballVelY; // Ball's current velocity
         let mouseX, mouseY; // Current mouse position relative to the canvas
         let isGameActive = false; // Flag to control if the game loop is running
 
-        // Define the start and end cell coordinates for the maze
-        // Start is top-left, End is bottom-right
-        const START_CELL_COL = 0;
-        const START_CELL_ROW = 0;
-        const END_CELL_COL = MAZE_COLS - 1;
-        const END_CELL_ROW = MAZE_ROWS - 1;
+        // Define the start and end cell coordinates (these are *grid indices*, not pixel positions)
+        let START_CELL_COL;
+        let START_CELL_ROW;
+        let END_CELL_COL;
+        let END_CELL_ROW;
 
         // --- Maze Generation (Recursive Backtracking Algorithm) ---
-        // This algorithm ensures a single, solvable path through the maze, creating high difficulty.
         function generateMaze() {
-            // Initialize the entire maze grid with walls (1)
             maze = Array(MAZE_ROWS).fill(null).map(() => Array(MAZE_COLS).fill(1));
-            // Keep track of visited cells during maze generation
             const visited = Array(MAZE_ROWS).fill(null).map(() => Array(MAZE_COLS).fill(false));
 
-            const stack = []; // Stack for backtracking
+            const stack = [];
             let currentRow = START_CELL_ROW;
             let currentCol = START_CELL_COL;
 
-            // Start carving a path from the initial cell
-            maze[currentRow][currentCol] = 0; // Mark the starting cell as a path
-            visited[currentRow][currentCol] = true; // Mark as visited
-            stack.push({ r: currentRow, c: currentCol }); // Add to stack
+            maze[currentRow][currentCol] = 0;
+            visited[currentRow][currentCol] = true;
+            stack.push({ r: currentRow, c: currentCol });
 
-            // Loop while there are cells to visit on the stack
             while (stack.length > 0) {
-                let { r, c } = stack[stack.length - 1]; // Get the current cell (top of stack) without removing it
+                let { r, c } = stack[stack.length - 1];
 
                 const unvisitedNeighbors = [];
-                // Define possible directions to move (right, left, down, up)
-                // We check neighbors two steps away to ensure walls in between
                 const directions = [
                     { dr: 0, dc: 1 },  // Right
                     { dr: 0, dc: -1 }, // Left
@@ -165,189 +151,151 @@
                     { dr: -1, dc: 0 }  // Up
                 ];
 
-                // Find unvisited neighbors that are two cells away
                 for (const dir of directions) {
                     const nextR = r + dir.dr * 2;
                     const nextC = c + dir.dc * 2;
 
-                    // Check if the next cell is within bounds and not yet visited
                     if (nextR >= 0 && nextR < MAZE_ROWS && nextC >= 0 && nextC < MAZE_COLS && !visited[nextR][nextC]) {
                         unvisitedNeighbors.push({ r: nextR, c: nextC, dir: dir });
                     }
                 }
 
                 if (unvisitedNeighbors.length > 0) {
-                    // If there are unvisited neighbors, pick one randomly
                     const { r: nextR, c: nextC, dir } = unvisitedNeighbors[Math.floor(Math.random() * unvisitedNeighbors.length)];
 
-                    // Carve a path through the wall between the current cell and the chosen neighbor
-                    maze[r + dir.dr][c + dir.dc] = 0; // The cell directly between them becomes a path
-                    maze[nextR][nextC] = 0;           // The neighbor cell itself becomes a path
+                    maze[r + dir.dr][c + dir.dc] = 0;
+                    maze[nextR][nextC] = 0;
 
-                    visited[nextR][nextC] = true; // Mark the neighbor as visited
-                    stack.push({ r: nextR, c: nextC }); // Push the neighbor onto the stack to explore from there
+                    visited[nextR][nextC] = true;
+                    stack.push({ r: nextR, c: nextC });
                 } else {
-                    stack.pop(); // If no unvisited neighbors, backtrack by popping from the stack
+                    stack.pop();
                 }
             }
 
-            // Explicitly ensure the start and end cells are paths, in case the algorithm didn't connect them perfectly
             maze[START_CELL_ROW][START_CELL_COL] = 0;
             maze[END_CELL_ROW][END_CELL_COL] = 0;
         }
 
         // --- Drawing Functions ---
-        // Draws the maze on the canvas
         function drawMaze() {
             for (let r = 0; r < MAZE_ROWS; r++) {
                 for (let c = 0; c < MAZE_COLS; c++) {
                     if (maze[r][c] === 1) { // If the cell is a wall
-                        ctx.fillStyle = 'black'; // Now draw walls in black
+                        ctx.fillStyle = 'black'; // Walls are black
                         ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                     } else { // If the cell is a path
-                        ctx.fillStyle = 'yellow'; // Now draw paths in yellow
+                        ctx.fillStyle = 'yellow'; // Paths are yellow
                         ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                     }
                 }
             }
         }
 
-        // Draws the red ball at its current position
         function drawBall() {
-            ctx.beginPath(); // Start a new drawing path
-            ctx.arc(ballX, ballY, BALL_RADIUS, 0, Math.PI * 2); // Draw a circle
-            ctx.fillStyle = 'red'; // Set ball color to red
-            ctx.fill(); // Fill the circle
-            ctx.closePath(); // Close a path
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, BALL_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = 'red';
+            ctx.fill();
+            ctx.closePath();
         }
 
-        // Draws the blue 'X' at the maze's finish line
         function drawFinishX() {
-            // Calculate the pixel center of the end cell
             const endX = END_CELL_COL * CELL_SIZE + CELL_SIZE / 2;
             const endY = END_CELL_ROW * CELL_SIZE + CELL_SIZE / 2;
 
-            ctx.strokeStyle = 'blue'; // Set 'X' color to blue for good contrast
-            ctx.lineWidth = 4; // Make the 'X' lines thicker
-            ctx.lineCap = 'round'; // Rounded ends for the lines
+            ctx.strokeStyle = 'blue';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
 
-            // Draw the first line of the 'X'
             ctx.beginPath();
             ctx.moveTo(endX - CELL_SIZE / 2.5, endY - CELL_SIZE / 2.5);
             ctx.lineTo(endX + CELL_SIZE / 2.5, endY + CELL_SIZE / 2.5);
-            ctx.stroke(); // Render the line
+            ctx.stroke();
 
-            // Draw the second line of the 'X'
             ctx.beginPath();
             ctx.moveTo(endX + CELL_SIZE / 2.5, endY - CELL_SIZE / 2.5);
             ctx.lineTo(endX - CELL_SIZE / 2.5, endY + CELL_SIZE / 2.5);
-            ctx.stroke(); // Render the line
-            ctx.closePath(); // Close the path
+            ctx.stroke();
+            ctx.closePath();
         }
 
         // --- Collision Detection ---
-        // Checks if a given pixel coordinate (px, py) is within a wall cell
         function isWallAt(px, py) {
-            // If the point is outside the canvas, treat it as a wall to keep the ball within bounds
-            if (px < 0 || px >= CANVAS_WIDTH || py < 0 || py >= CANVAS_HEIGHT) {
+            if (px < 0 || px >= canvas.width || py < 0 || py >= canvas.height) {
                 return true; 
             }
-            // Convert pixel coordinates to grid cell coordinates
             const col = Math.floor(px / CELL_SIZE);
             const row = Math.floor(py / CELL_SIZE);
             
-            // Safety check for array bounds (should not be an issue if px/py are clamped within canvas)
             if (row < 0 || row >= MAZE_ROWS || col < 0 || col >= MAZE_COLS) {
                 return true; 
             }
-            // Return true if the cell at these coordinates is a wall (value 1)
             return maze[row][col] === 1; 
         }
 
-        // Checks if the entire ball (given its center newX, newY, and BALL_RADIUS) collides with any wall.
         function checkBallCollision(newX, newY) {
-            // Define points around the ball's circumference to check for collisions.
-            // Using 8 points (every 45 degrees) for good accuracy.
             const pointsToCheck = [];
             for (let i = 0; i < 8; i++) {
-                const angle = (i * Math.PI) / 4; // 0, 45, 90, ..., 315 degrees
-                // Slightly inward from the very edge of the ball to make collisions feel more forgiving
-                // and allow smooth sliding along walls.
+                const angle = (i * Math.PI) / 4; 
                 pointsToCheck.push({
-                    x: newX + (BALL_RADIUS - 0.1) * Math.cos(angle), 
-                    y: newY + (BALL_RADIUS - 0.1) * Math.sin(angle)  
+                    x: newX + BALL_RADIUS * Math.cos(angle), 
+                    y: newY + BALL_RADIUS * Math.sin(angle)  
                 });
             }
+            pointsToCheck.push({ x: newX, y: newY }); // Check center as well
 
-            // Also check the center of the ball
-            pointsToCheck.push({ x: newX, y: newY });
-
-            // Iterate through these points and check if any of them are inside a wall
             for (const p of pointsToCheck) {
                 if (isWallAt(p.x, p.y)) {
-                    return true; // Collision detected if any point is in a wall
+                    return true; 
                 }
             }
-            return false; // No collision if all points are clear
+            return false; 
         }
-
 
         // --- Game Loop and Logic ---
         function update() {
-            // Only update if the game is active (not won)
             if (!isGameActive) {
                 return;
             }
 
-            // Calculate force/attraction towards mouse
             const dx = mouseX - ballX;
             const dy = mouseY - ballY;
 
-            // Apply force to velocity, capped by MAX_VELOCITY
             ballVelX += dx * MOUSE_FORCE_FACTOR;
             ballVelY += dy * MOUSE_FORCE_FACTOR;
 
-            // Apply damping (friction)
             ballVelX *= DAMPING_FACTOR;
             ballVelY *= DAMPING_FACTOR;
 
-            // Cap the velocity
             const currentSpeed = Math.sqrt(ballVelX * ballVelX + ballVelY * ballVelY);
             if (currentSpeed > MAX_VELOCITY) {
                 ballVelX = (ballVelX / currentSpeed) * MAX_VELOCITY;
                 ballVelY = (ballVelY / currentSpeed) * MAX_VELOCITY;
             }
 
-            // Calculate proposed new position
             let newBallX = ballX + ballVelX;
             let newBallY = ballY + ballVelY;
 
-            // Clamp new proposed position to canvas boundaries before collision check
-            newBallX = Math.max(BALL_RADIUS, Math.min(newBallX, CANVAS_WIDTH - BALL_RADIUS));
-            newBallY = Math.max(BALL_RADIUS, Math.min(newBallY, CANVAS_HEIGHT - BALL_RADIUS));
+            newBallX = Math.max(BALL_RADIUS, Math.min(newBallX, canvas.width - BALL_RADIUS));
+            newBallY = Math.max(BALL_RADIUS, Math.min(newBallY, canvas.height - BALL_RADIUS));
             
-            // Collision detection and response
-            // We check X and Y movements independently first to allow sliding along walls.
             let collidedX = false;
             let collidedY = false;
 
-            if (checkBallCollision(newBallX, ballY)) { // Check X movement collision
-                ballVelX = 0; // Stop horizontal movement
-                newBallX = ballX; // Revert X position
+            if (checkBallCollision(newBallX, ballY)) {
+                ballVelX = 0;
+                newBallX = ballX;
                 collidedX = true;
             }
-            if (checkBallCollision(ballX, newBallY)) { // Check Y movement collision
-                ballVelY = 0; // Stop vertical movement
-                newBallY = ballY; // Revert Y position
+            if (checkBallCollision(ballX, newBallY)) {
+                ballVelY = 0;
+                newBallY = ballY;
                 collidedY = true;
             }
 
-            // If a collision happened on either axis, re-check the combined movement.
-            // This handles corner cases where moving in one direction reveals a collision in the other.
             if (collidedX || collidedY) {
                 if (checkBallCollision(newBallX, newBallY)) {
-                    // If still colliding after resolving individual axes, it means we hit a corner or complex wall.
-                    // Revert to original position and stop all movement.
                     ballVelX = 0;
                     ballVelY = 0;
                     newBallX = ballX;
@@ -355,92 +303,129 @@
                 }
             }
 
-            // Update ball's actual position
             ballX = newBallX;
             ballY = newBallY;
 
-            // Check if the ball has reached the end of the maze
-            // Calculate the pixel center of the end cell
             const endPixelX = END_CELL_COL * CELL_SIZE + CELL_SIZE / 2;
             const endPixelY = END_CELL_ROW * CELL_SIZE + CELL_SIZE / 2;
             
-            // Calculate the distance between the ball's center and the end cell's center
             const distanceToEnd = Math.sqrt(Math.pow(ballX - endPixelX, 2) + Math.pow(ballY - endPixelY, 2));
 
-            // If the ball is within a certain threshold distance to the end point
-            if (distanceToEnd < BALL_RADIUS + CELL_SIZE / 4) { // Small buffer for easier detection
-                isGameActive = false; // Stop the game
-                showMessageBox("CONGRATULATIONS! YOU'VE SOLVED THE MAZE!"); // Display win message in ALL CAPS
+            if (distanceToEnd < BALL_RADIUS + CELL_SIZE / 4) {
+                isGameActive = false;
+                showMessageBox("CONGRATULATIONS! YOU'VE SOLVED THE MAZE!");
             }
 
-            draw(); // Redraw all game elements for the next frame
-            requestAnimationFrame(update); // Request the next animation frame, creating the game loop
+            draw();
+            requestAnimationFrame(update);
         }
 
         // Main draw function: clears canvas and redraws all elements
         function draw() {
-            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT); // Clear the entire canvas
-            drawMaze(); // Draw the maze walls and paths
-            drawFinishX(); // Draw the 'X' at the end
-            drawBall(); // Draw the red ball
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawMaze();
+            drawFinishX();
+            drawBall();
         }
 
         // --- Game Initialization ---
         function initGame() {
-            hideMessageBox(); // Hide any existing message box
-            generateMaze(); // Generate a new maze
+            hideMessageBox();
+            generateMaze();
             
-            // Set the ball's initial position to the center of the start cell
             ballX = START_CELL_COL * CELL_SIZE + CELL_SIZE / 2;
             ballY = START_CELL_ROW * CELL_SIZE + CELL_SIZE / 2;
             
-            // Initialize ball velocity to zero
             ballVelX = 0;
             ballVelY = 0;
 
-            // Set the initial mouse position to match the ball's position
             mouseX = ballX; 
             mouseY = ballY;
 
-            isGameActive = true; // Set game state to active
-            requestAnimationFrame(update); // Start the game loop
+            isGameActive = true;
+            requestAnimationFrame(update);
         }
 
         // --- Event Listeners ---
-        // Listen for mouse movement over the canvas
         canvas.addEventListener('mousemove', (e) => {
-            // Get the bounding rectangle of the canvas to calculate mouse position relative to it
             const rect = canvas.getBoundingClientRect();
-            mouseX = e.clientX - rect.left; // Mouse X coordinate relative to canvas
-            mouseY = e.clientY - rect.top;  // Mouse Y coordinate relative to canvas
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
         });
 
         // --- Message Box Control Functions ---
-        // Displays a message in the message box
         function showMessageBox(message) {
             messageText.textContent = message;
-            messageBox.style.display = 'block'; // Make the message box visible
+            messageBox.style.display = 'block';
         }
 
-        // Hides the message box
         function hideMessageBox() {
-            messageBox.style.display = 'none'; // Make the message box hidden
+            messageBox.style.display = 'none';
         }
 
-        // Event listener for the restart button inside the message box
         restartButton.addEventListener('click', () => {
-            initGame(); // Re-initialize the game when the button is clicked
-        });
-
-        // Event listener for the new "MOVE ON?" button
-        moveOnButton.addEventListener('click', () => {
-            window.location.href = 'https://www.shinydimes.com/leisure'; // Redirect to the specified URL
-        });
-
-        // Start the game automatically when the entire window content has loaded
-        window.onload = function() {
             initGame();
-        };
+        });
+
+        moveOnButton.addEventListener('click', () => {
+            window.location.href = 'https://www.shinydimes.com/leisure';
+        });
+
+        // --- Canvas Resizing Logic ---
+        function resizeCanvas() {
+            // Calculate maximum available space with some padding
+            const maxWidth = window.innerWidth * 0.95;
+            const maxHeight = window.innerHeight * 0.95;
+
+            // Determine the aspect ratio of our base maze (60 columns / 45 rows = 4/3)
+            const aspectRatio = BASE_MAZE_COLS / BASE_MAZE_ROWS;
+
+            let newWidth = maxWidth;
+            let newHeight = maxHeight;
+
+            // Adjust dimensions to maintain aspect ratio and fit within bounds
+            if (newWidth / newHeight > aspectRatio) {
+                // Width is too large relative to height, constrain by height
+                newWidth = newHeight * aspectRatio;
+            } else {
+                // Height is too large relative to width, constrain by width
+                newHeight = newWidth / aspectRatio;
+            }
+
+            // Ensure a minimum size for playability on very small screens
+            const minDimension = Math.min(window.innerWidth, window.innerHeight);
+            if (minDimension < 600) { // If screen is small, ensure at least a reasonable size
+                newWidth = Math.max(newWidth, 500); // Minimum canvas width
+                newHeight = Math.max(newHeight, 375); // Minimum canvas height (maintaining 4/3 ratio)
+            }
+
+
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+
+            // Recalculate CELL_SIZE and BALL_RADIUS based on new canvas dimensions
+            CELL_SIZE = Math.min(canvas.width / BASE_MAZE_COLS, canvas.height / BASE_MAZE_ROWS);
+            BALL_RADIUS = CELL_SIZE * (7 / 20); // Maintain the 7/20 ratio (current BALL_RADIUS / current CELL_SIZE)
+
+            // Update MAZE_COLS and MAZE_ROWS to ensure they are consistent with the calculated CELL_SIZE
+            // These might not be exactly BASE_MAZE_COLS/ROWS if CELL_SIZE is adjusted due to aspect ratio fitting,
+            // but the number of actual cells will be calculated correctly based on canvas size and CELL_SIZE.
+            MAZE_COLS = Math.floor(canvas.width / CELL_SIZE);
+            MAZE_ROWS = Math.floor(canvas.height / CELL_SIZE);
+
+            // Re-calculate start and end points based on updated MAZE_COLS/ROWS
+            START_CELL_COL = 0;
+            START_CELL_ROW = 0;
+            END_CELL_COL = MAZE_COLS - 1;
+            END_CELL_ROW = MAZE_ROWS - 1;
+
+
+            initGame(); // Re-initialize the game with new dimensions
+        }
+
+        // Event listeners for initial load and window resize
+        window.onload = resizeCanvas;
+        window.addEventListener('resize', resizeCanvas);
     </script>
 </body>
 </html>
